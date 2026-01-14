@@ -10,7 +10,9 @@ featured: true
 
 ## Background
 
-While working as an intern at the company Conversadocs, I was tasked with learning how API keys work and how HTTP requests on Postman are utilized to test servers, so I built this simple Chatbot web app from an older existing ChatGPT model **(gpt-3.5-turbo)** to help me understand the full stack process of software engineering that my supervisor taught me.
+During my internship at **ConversaDocs**, I was tasked with building a stronger practical understanding of **API keys**, **HTTP requests**, and how tools like **Postman** are used to test and validate backend services. To reinforce those concepts, I created this lightweight chatbot web application using an earlier ChatGPT model (**gpt-3.5-turbo**) as a hands-on learning project.
+
+The goal was to understand the **end-to-end full-stack flow** my supervisor emphasized—how a client sends a request, how a server receives and processes it, how credentials are handled securely, and how a response is returned and displayed in the UI. This project served as a focused sandbox for experimenting with request/response patterns and confirming behavior through both browser interactions and API testing.
 
 ## Overview
 
