@@ -4,15 +4,8 @@ title: About
 permalink: /about/
 ---
 
-This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
+Hello! My name is Tamir! I am a Fall 2025 graduate of Towson University where I completed my Bachelor's of Science in Computer Science. I have a passion for creating new software ideas and side projects to keep up with trends in tech and learn engineering practices that I can employ in my career. Read through some posts on projects I've taken on throughout my career and let me know what you think!
 
-You can find the source code for Minima at GitHub:
-[jekyll][jekyll-organization] /
-[minima](https://github.com/jekyll/minima)
-
-You can find the source code for Jekyll at GitHub:
-[jekyll][jekyll-organization] /
-[jekyll](https://github.com/jekyll/jekyll)
-
-
-[jekyll-organization]: https://github.com/jekyll
+My email: tamirkrief@gmail.com
+My Github Page: https://github.com/tkrief1
+My LinkedIn Page: https://www.linkedin.com/in/tamir-krief-a640ab274/
