@@ -30,6 +30,7 @@ description: >- # this means to ignore newlines until "baseurl:"
 url: "https://tkrief1.github.io" # the base hostname & protocol for your site
 baseurl: "/tamir-krief-jekyll-portfolio"
 github_username: tkrief1
+linkedin_username: tamir-krief-a640ab274
 
 # Build settings
 theme: minima
