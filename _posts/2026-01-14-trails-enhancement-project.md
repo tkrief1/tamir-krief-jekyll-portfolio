@@ -1,181 +1,190 @@
 ---
 layout: post
-title: "County Parks Trail Reporting (Group Project)"
+title: "County Parks Trail Reporting (Flask + MySQL + Docker Compose)"
 date: 2026-01-14
 categories: [projects, web, group-project]
-tags: [flask, python, mysql, docker, docker-compose, incident-reporting, civic-tech]
-excerpt: "A Flask + MySQL web app built as a team project to support structured trail condition and incident reporting for county parks."
+tags: [flask, python, mysql, sqlalchemy, docker, docker-compose, incident-reporting, civic-tech]
+excerpt: "A Flask + MySQL web app built as a team project to support structured trail incident reporting, staff review, and basic admin management—packaged with Docker Compose for repeatable local deployment."
 featured: true
 ---
 
-## Background
-
-During the Spring 2025 semester, I took **Software Engineering (COSC 412)** at Towson University. As the capstone deliverable for the course, our team was tasked with designing and building a **deployable software project** and presenting it as a final demonstration. The goal was to practice core **software development life cycle (SDLC)** concepts in a realistic, team-based setting—requirements, planning, implementation, testing, iteration, and delivery.
-
-I worked on a team of four, and we built our application from scratch. One teammate, who had experience with **Baltimore County Recreation and Parks**, proposed a trail reporting platform that would allow park patrons to submit trail occurrences—such as fallen trees, hazards, or sightings of plants and wildlife—so that other patrons and park staff could quickly view and respond to relevant updates.
-
-Over the course of the semester, we developed the project through **biweekly sprint cycles**. I helped keep the team organized by setting up recurring sprint meetings to review progress, coordinate code reviews, and align on priorities and next steps.
-
 ## Overview
 
-This repository is a **group-built web application** focused on **trail condition / incident reporting** for county parks (Baltimore County trails context). The core goal is to make it easy for users to submit consistent, actionable reports (hazards, maintenance needs, conditions, observations) and for staff to review and manage those submissions.
+This project is a **trail incident reporting** web application built as part of a collaborative team effort. It provides a lightweight workflow for park patrons to submit trail-related incidents (hazards, maintenance needs, observations, etc.), and for staff/admin users to review, manage, and triage the submitted reports.
 
-The project is structured as a full stack app with:
-
-- a **Flask (Python)** backend
-- a **MySQL** database for persistence
-- a **Docker Compose** setup to run the full environment locally with consistent dependencies
+The application is built with **Flask**, persists data in **MySQL** via **SQLAlchemy**, supports **photo uploads**, and is deployed locally using **Docker Compose** for consistent development and demos.
 
 ---
 
-## Problem
+## Key Features
 
-Trail issues are often reported in fragmented or unstructured ways:
-
-- missing location/context
-- inconsistent categories (hazard vs. maintenance vs. observation)
-- no single place to review or prioritize reports
-- limited visibility into what has already been reported
-
-A usable reporting workflow needs to be fast for the person submitting it, and structured enough for staff to act on.
-
----
-
-## What We Built
-
-At a high level, the app supports:
-
-- **Submitting trail reports** (condition issues, hazards, maintenance needs, observations)
-- **Storing reports in a database** so they can be tracked over time
-- **Review workflows** to support staff/admin visibility and management
-- A clear project layout so the system can be extended (status tracking, attachments, analytics, etc.)
-
-Because this was a team effort, a big focus was making the project **easy to run locally** for every contributor.
+- **Public reporting form**: submit new trail reports (park, trail, category, description, contact info)
+- **Photo uploads**: optional image upload stored on disk and served back via a dedicated route
+- **Staff dashboard**: view incidents in reverse chronological order and see report details at a glance
+- **Admin view**: view all incidents and delete entries
+- **Persistence**: incidents are stored in MySQL and created via SQLAlchemy model definitions
+- **Repeatable local deployment**: single-command startup using Docker Compose
 
 ---
 
 ## Tech Stack
 
 - **Backend:** Flask (Python)
-- **Database:** MySQL
-- **Local environment / deployment:** Docker + Docker Compose
-- **Frontend:** Server-rendered templates + static assets (typical Flask pattern)
+- **ORM / Data layer:** SQLAlchemy (Flask-SQLAlchemy)
+- **Database:** MySQL 8
+- **Containerization:** Docker + Docker Compose
+- **Uploads:** local filesystem volume mounted into the app container
+- **Templates:** server-rendered HTML (`home.html`, `staff_dashboard.html`, `admin.html`)
 
 ---
 
-## How the System Fits Together (Local Dev)
+## Data Model
 
-In development, the app runs as multiple services orchestrated by Docker Compose:
+The core database table is **`Incidents`**, represented by the `Incident` SQLAlchemy model. Each report captures:
 
-1. **Web app service** (Flask)
-2. **Database service** (MySQL)
+- `incidentNum` (primary key)
+- `ParkName`, `TrailName`
+- `SubmiterName`, `Contact`
+- `Date` (timestamp; defaults to UTC now)
+- `Category`, `Description`
+- `PhotoURL` (path to the served upload)
+- `Status` (initialized as `"New"`)
+- `StaffAssign` (string field, initialized empty)
+- `Priority` (defaults to `"Medium"` if not provided)
 
-Docker Compose handles:
-
-- container networking between the web app and DB
-- environment configuration
-- repeatable startup (one command) for anyone on the team
-
-This avoids dependency drift and makes onboarding smoother.
-
----
-
-## Local Project Layout (High-Level)
-
-The repo follows a common Flask layout pattern:
-
-- `app.py` (or equivalent) — Flask entrypoint / route registration
-- `templates/` — HTML templates for views (reporting pages, staff/admin pages)
-- `static/` — CSS/JS/assets
-- `uploads/` (optional) — stored user uploads (images/files), if enabled
-- `requirements.txt` — Python dependencies
-- `Dockerfile` — web container build definition
-- `docker-compose.yml` — multi-service orchestration (web + MySQL)
-
-If you want this post to name the **exact** route paths, page names, and DB schema tables, paste your `app.py` (or main Flask file) and the `docker-compose.yml` and I’ll update the post to match your implementation precisely.
+On application startup, the database schema is created automatically through `db.create_all()` (within the Flask app context).
 
 ---
 
-## Running Locally (Docker Compose)
+## Routes / Endpoints
 
-### Prerequisites
+### Public-facing routes
 
-- Docker installed (Docker Desktop recommended)
-- Docker Compose available
+- `GET /`
+  - Loads the home page and displays the **10 most recent incidents** (ordered by `incidentNum` descending).
+  - Template: `home.html`
 
-### Start the app
+- `POST /submit_report`
+  - Accepts form fields:
+    - `park`, `trail`, `submiter`, `contact`, `category`, `description`
+    - `priority` (optional; defaults to `"Medium"`)
+  - Accepts optional file upload:
+    - `photo` (png/jpg/jpeg)
+  - Creates a new `Incident` record with:
+    - `Status = "New"`
+    - `StaffAssign = ""`
+  - Saves uploaded photos to `uploads/` with a UUID-based filename and stores a `PhotoURL` that points to the served upload route.
+  - Redirects back to `/` and shows a success flash message.
 
-From the project directory that contains `docker-compose.yml`:
+- `GET /uploads/<filename>`
+  - Serves uploaded images from the `uploads/` directory.
+
+### Staff/admin routes
+
+- `GET /dashboard`
+  - Displays all incidents ordered by `Date` descending.
+  - Includes a safety check that verifies whether a referenced upload file exists; if not, it clears `PhotoURL` to avoid broken image links.
+  - Template: `staff_dashboard.html`
+
+- `GET /admin`
+  - Admin view of all incidents.
+  - Template: `admin.html`
+
+- `POST /delete_incident/<incident_id>`
+  - Deletes the incident by primary key (`incidentNum`) and redirects back to `/admin` with a flash confirmation.
+
+---
+
+## File Upload Handling
+
+Photo uploads are optional:
+
+- Stored under `uploads/`
+- Saved using a unique UUID filename to prevent collisions
+- Served through the app via `GET /uploads/<filename>`
+- Uploaded directory is created automatically if it doesn’t exist
+
+In Docker, uploads persist through a volume mount:
+
+- Host: `./uploads`
+- Container: `/app/uploads`
+
+This makes uploads survive container restarts and keeps demo data stable.
+
+---
+
+## Docker Compose Deployment
+
+The stack is defined as two services on a shared Docker network:
+
+### `parks-db` (MySQL 8)
+
+- Image: `mysql:8`
+- Container name: `parks-db`
+- Exposes: `3307` on the host → `3306` in container
+- Persists data via Docker volume: `parks_data`
+- Initializes database and credentials with environment variables:
+  - Database: `county_parks`
+  - User: `parks_auth`
+
+### `parks-app` (Flask)
+
+- Build: from the project `Dockerfile`
+- Container name: `county-parks`
+- Exposes: `5001` on host → `5000` in container
+- Connects to MySQL via env vars:
+  - `DATABASE_HOST=parks-db`
+  - `DATABASE_USER=parks_auth`
+  - `DATABASE_PASSWORD=...`
+  - `DATABASE_NAME=county_parks`
+- Depends on `parks-db` to ensure the DB container starts first
+- Mounts uploads directory for persistence
+
+---
+
+## Running Locally
+
+From the directory containing `docker-compose.yml`:
 
 ```bash
 docker compose up -d --build
 ```
 
-### Open the app
+Open the application:
 
-Your compose file will map a host port to the Flask container. Common examples look like:
+- `http://localhost:5001/`
 
-- `http://localhost:5000`
-- `http://localhost:5001`
-
-If you’re unsure which port is used on your machine, check the `ports:` mapping in `docker-compose.yml`.
-
-### Useful commands
-
-Stop services:
+Stop the stack:
 
 ```bash
 docker compose down
 ```
 
-See running containers:
+---
 
-```bash
-docker compose ps
-```
+## My Contributions (Group Project)
 
-View logs:
-
-```bash
-docker compose logs -f
-```
+- **Sprint leadership / cadence:** Initiated and facilitated **biweekly sprint meetings** to review progress, align priorities, and keep deliverables moving toward demo-ready milestones.
+- **Team communication + coordination:** Acted as the primary communication hub between teammates—tracking blockers, confirming ownership of tasks, and ensuring updates were shared consistently across the group.
+- **Project planning & delivery support:** Helped translate requirements into actionable work items, coordinated lightweight code reviews, and supported integration/testing to keep the project stable as features were merged.
+- **Hands-on engineering:** Contributed directly to the build by implementing and refining core application components (routes/templates, form handling, database interactions), plus troubleshooting bugs and improving overall usability.
 
 ---
 
-## My Contributions (Team Project)
+## Next Steps (If We Were to Continue the Project)
 
-In a group project, my focus was on shipping reliable, well-integrated pieces that fit the larger workflow:
+If this project were extended beyond the current MVP, the most impactful improvements would be:
 
-- Helped implement core reporting flow pieces so submissions are consistent and usable
-- Worked within the shared repo workflow (branches, pull requests, merges)
-- Supported integration and testing so features worked end-to-end across services
-- Contributed to structure and run-ability so teammates could launch locally without friction
-
-(If you want, paste your specific areas of work—routes, templates, DB schema, UI pieces—and I’ll rewrite this section with exact bullets tied to what you built.)
-
----
-
-## What I Learned
-
-- How to collaborate effectively on a shared codebase (PR flow, merge conflicts, division of work)
-- How to design reporting inputs that balance **simplicity** for users with **structured data** for staff
-- How containerized dev environments (Docker Compose) reduce setup issues and speed up onboarding
-- How to think about incident reporting systems as a lifecycle (submit → review → resolve → analyze)
-
----
-
-## Next Steps (If Continuing the Project)
-
-If this project were extended further, the most impactful additions would be:
-
-- **Status workflow:** New → In Review → Scheduled → Resolved
-- **Attachment support:** photos and optional metadata
-- **Map-driven location capture:** pin drop / GPS on mobile
-- **Admin tools:** filtering, exporting, deduping, assignment
-- **Analytics:** trends by category, location hot-spots, seasonal patterns
+- **Status workflow:** Expand incident lifecycle tracking beyond the initial `"New"` state (e.g., **New → In Review → Scheduled → Resolved**) with timestamps and basic audit history.
+- **Richer attachments:** Support multiple photos per incident, optional metadata (notes/captions), and stronger file validation/thumbnail previews in the UI.
+- **Map-based location capture:** Add a map interface (pin drop) and/or mobile GPS capture so each incident can be tied to a specific trail segment or coordinate.
+- **Admin productivity tools:** Add filtering/search, export (CSV), duplicate detection, and assignment features to streamline staff triage and workload management.
+- **Analytics & reporting:** Build dashboards for trends over time (by category, park/trail, priority), hotspot identification, and seasonal pattern insights.
 
 ---
 
 ## Repo
 
 GitHub: `tkrief1/county-parks-jjmt`
+
+---
