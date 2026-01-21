@@ -33,7 +33,7 @@ github_username: tkrief1
 linkedin_username: tamir-krief-a640ab274
 
 # Build settings
-theme: modern-resume-theme
+theme: minima
 plugins:
   - jekyll-feed
 
